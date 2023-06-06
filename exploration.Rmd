@@ -33,13 +33,18 @@ data_energy_share <- data_energy_share %>% row_to_names(row_number = 1)
 
 data_energy_share <- data_energy_share %>%
   pivot_longer(-Year, names_to = "country", values_to = "percent_renewable_energy_share")
-```
 
-Clean column names and change data type from character to numeric
-```{r}
 #clean names
 data_energy_share <- clean_names(data_energy_share)
+```
 
+Filter for SIDS
+```{r}
+data_energy_share <- filter(data_energy_share, country == c("Marshall Islands", "Fiji"))
+```
+
+Change data type from character to numeric
+```{r}
 #check class of data
 class(data_energy_share$year)
 class(data_energy_share$percent_renewable_energy_share)
@@ -48,7 +53,6 @@ class(data_energy_share$percent_renewable_energy_share)
 data_energy_share$year <- as.numeric(data_energy_share$year)
 data_energy_share$percent_renewable_energy_share <- as.numeric(data_energy_share$percent_renewable_energy_share)
 
-
 #chack class of data
 class(data_energy_share$year)
 class(data_energy_share$percent_renewable_energy_share)
@@ -56,16 +60,11 @@ class(data_energy_share$percent_renewable_energy_share)
 ```
 
 
-Filter for SIDS
-```{r}
-data_energy_share <- filter(data_energy_share, country == c("Marshall Islands", "Fiji"))
-```
-
 Create a line chart
 ```{r}
 ggplot(data = data_energy_share, aes(x = year, y = percent_renewable_energy_share, color = country)) +
   geom_line() +
-  labs(title = "Percent Renewable Energy Share in Small Island Developing States (2000-2019)",
+  labs(title = "Percent Renewable Energy Share for Marshall Islands & Fiji (2000-2019)",
          x = "Year",
          y = "Renewable Energy Share (%)") +
   theme_classic()
