@@ -5,15 +5,16 @@ date: "2023-06-06"
 output: html_document
 ---
 
+Load packages
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
 
-Load packages
-```{r}
-library("tidyverse")
-library("here")
-library("janitor")
+library(tidyverse)
+library(here)
+library(janitor)
+library(plotly)
+library(visdat)
+library(naniar)
 ```
 
 Load data
@@ -21,44 +22,17 @@ Load data
 data_energy_share <- read_csv(here("data/sids_renewable_energy_share.csv"))
 ```
 
-Clean up data frame names
-```{r}
-data_energy_share <- clean_names(data_energy_share)
-```
-
 Tidy data set
 ```{r}
-#Make the first row the column names
+#Remove unnecessary column header
 data_energy_share <- data_energy_share %>% row_to_names(row_number = 1)
 
+#Convert data into Tidy format
 data_energy_share <- data_energy_share %>%
   pivot_longer(-Year, names_to = "country", values_to = "percent_renewable_energy_share")
 
-#clean names
+#Clean column names
 data_energy_share <- clean_names(data_energy_share)
-
-#filter for missing data 
-data_energy_share <- filter(data_energy_share, percent_renewable_energy_share != "No Data")
-
-```
-
-Filter for Oceania SIDS
-```{r}
-#filter for SIDS that are in Oceania
-pacific_sids <- c("Niue", "Kiribati", "Fiji", "Marshall Islands", "Micronesia, Federated States of", "Nauru", "Palau", "Papua New Guinea", "Samoa", "Solomon Islands", "Tonga", "Tuvalu", "Vanuatu", "Cook Islands", "Timor-Leste")
-
-#filter for SIDS that are in the Carribean
-carribean_sids <- c("Cuba", "Saint Lucia", "Suriname", "Saint Vincent and the Grenadines", "Dominican Republic", "Dominica", "Grenada", "Jamaica", "Belize", "Guyana", "Anguilla", "Aruba", "Barbados", "Bermuda", "Virgin Islands, British", "Curaçao", "Haiti", "Saint Kitts and Nevis", "Trinidad and Tobago", "Turks and Caicos Islands", "Bahamas", "Cayman Islands", "Antigua and Barbuda", "Sint Maarten", "Montserrat")
-
-##filter for SIDS that are in the Atlantic, Indian Ocean, and South China Sea
-ais_sids <- c("Maldives", "Mauritius", "Cabo Verde", "Comoros", "Guinea-Bissau", "Sao Tome and Principe", "Seychelles", "Singapore")
-
-
-data_energy_share <- data_energy_share %>%
-  mutate(sids_geographical_region = case_when(country %in% pacific_sids ~ "Pacific",
-                                              country %in% carribean_sids ~ "Carribean",
-                                              country %in% ais_sids ~ "AIS",
-                                              TRUE ~ "na"))
 ```
 
 Change data type from character to numeric
@@ -67,8 +41,8 @@ Change data type from character to numeric
 class(data_energy_share$year)
 class(data_energy_share$percent_renewable_energy_share)
 
-# numeric data
-data_energy_share$year <- as.numeric(data_energy_share$year)
+#data type
+data_energy_share$year <- as.factor(data_energy_share$year)
 data_energy_share$percent_renewable_energy_share <- as.numeric(data_energy_share$percent_renewable_energy_share)
 
 #chack class of data
@@ -77,18 +51,109 @@ class(data_energy_share$percent_renewable_energy_share)
 
 ```
 
-
-Create a line chart
+Investigate missing values
 ```{r}
-ggplot(data = data_energy_share, aes(x = year, y = percent_renewable_energy_share, color = country)) +
-  geom_line() +
-  labs(title = "Percent Renewable Energy Share for Marshall Islands & Fiji (2000-2019)",
-         x = "Year",
-         y = "Renewable Energy Share (%)") +
-  theme_classic()
+#Replace 'No Data' with NA
+data_energy_share[data_energy_share == "No Data"] <- NA
+
+#Visualize number of missing values in the data frame
+gg_miss_var(data_energy_share)
+
+#Explore missing data along time
+gg_miss_fct(data_energy_share, year)
+
+#Remove missing data
+data_energy_share <- na.omit(data_energy_share)
 ```
 
 
+```{r}
+tile_plot <- ggplot(data_energy_share, aes(x=year , y= country,
+                                              fill = percent_renewable_energy_share)) +
+  geom_tile() +
+  labs(title = "Percent Renewable Energy Share", y = "Country", x = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, size = 4, hjust = 1),
+        axis.text.y = element_text(size = 3, hjust = 1)) +
+  scale_fill_gradient(low = "khaki", high = "red")
+  
+tile_plot
+
+```
+
+
+Filter for SIDS
+```{r}
+#filter for SIDS that are in Oceania
+pacific_sids <- c("Niue", "Kiribati", "Fiji", "Marshall Islands", "Micronesia, Federated States of", "Nauru", "Palau", "Papua New Guinea", "Samoa", "Solomon Islands", "Tonga", "Tuvalu", "Vanuatu", "Cook Islands", "Timor-Leste")
+
+#filter for SIDS that are in the caribbean
+caribbean_sids <- c("Cuba", "Saint Lucia", "Suriname", "Saint Vincent and the Grenadines", "Dominican Republic", "Dominica", "Grenada", "Jamaica", "Belize", "Guyana", "Anguilla", "Aruba", "Barbados", "Bermuda", "Virgin Islands, British", "Curaçao", "Haiti", "Saint Kitts and Nevis", "Trinidad and Tobago", "Turks and Caicos Islands", "Bahamas", "Cayman Islands", "Antigua and Barbuda", "Sint Maarten", "Montserrat")
+
+##filter for SIDS that are in the Atlantic, Indian Ocean, and South China Sea
+ais_sids <- c("Maldives", "Mauritius", "Cabo Verde", "Comoros", "Guinea-Bissau", "Sao Tome and Principe", "Seychelles", "Singapore")
+
+#Add column called "sids_geographical_region" and populate rows with name of sids region
+data_energy_share <- data_energy_share %>%
+  mutate(sids_geographical_region = case_when(country %in% pacific_sids ~ "Pacific",
+                                              country %in% caribbean_sids ~ "caribbean",
+                                              country %in% ais_sids ~ "AIS",
+                                              TRUE ~ "na"))
+```
+
+Filter for Pacific Region
+```{r}
+pacific_data <- filter(data_energy_share, sids_geographical_region == "Pacific")
+
+```
+
+Create a line chart
+```{r}
+pacific_line_plot <- ggplot(data = pacific_data, aes(x = year, y = percent_renewable_energy_share, color = country)) +
+  geom_line() +
+  labs(title = "Renewable Energy Share in the Total Final Energy Consumption (%) for Small Island Developing States in the Pacific (2000-2019)",
+         x = "Year",
+         y = "Renewable Energy Share (%)") +
+  theme_classic()
+  
+ggplotly(pacific_line_plot)
+```
+
+Filter for the Atlantic, Indian Ocean, and South China Sea (AIS) Region
+```{r}
+ais_data <- filter(data_energy_share, sids_geographical_region == "AIS")
+
+```
+
+Create a line chart
+```{r}
+ais_line_plot <- ggplot(data = ais_data, aes(x = year, y = percent_renewable_energy_share, color = country)) +
+  geom_line() +
+  labs(title = "Renewable Energy Share in the Total Final Energy Consumption (%) for Small Island Developing States in the Atlantic, Indian Ocean, and South China Sea (2000-2019)",
+         x = "Year",
+         y = "Renewable Energy Share (%)") +
+  theme_classic()
+  
+ggplotly(ais_line_plot)
+```
+
+Filter for the Caribbean
+```{r}
+caribbean_data <- filter(data_energy_share, sids_geographical_region == "caribbean")
+
+```
+
+Create a line chart
+```{r}
+caribbean_line_plot <- ggplot(data = caribbean_data, aes(x = year, y = percent_renewable_energy_share, color = country)) +
+  geom_line() +
+  labs(title = "Renewable Energy Share in the Total Final Energy Consumption (%) for Small Island Developing States in the Caribbean",
+         x = "Year",
+         y = "Renewable Energy Share (%)") +
+  theme_classic()
+  
+ggplotly(caribbean_line_plot)
+```
 
 
 
