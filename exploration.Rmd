@@ -36,11 +36,29 @@ data_energy_share <- data_energy_share %>%
 
 #clean names
 data_energy_share <- clean_names(data_energy_share)
+
+#filter for missing data 
+data_energy_share <- filter(data_energy_share, percent_renewable_energy_share != "No Data")
+
 ```
 
-Filter for SIDS
+Filter for Oceania SIDS
 ```{r}
-data_energy_share <- filter(data_energy_share, country == c("Marshall Islands", "Fiji"))
+#filter for SIDS that are in Oceania
+pacific_sids <- c("Niue", "Kiribati", "Fiji", "Marshall Islands", "Micronesia, Federated States of", "Nauru", "Palau", "Papua New Guinea", "Samoa", "Solomon Islands", "Tonga", "Tuvalu", "Vanuatu", "Cook Islands", "Timor-Leste")
+
+#filter for SIDS that are in the Carribean
+carribean_sids <- c("Cuba", "Saint Lucia", "Suriname", "Saint Vincent and the Grenadines", "Dominican Republic", "Dominica", "Grenada", "Jamaica", "Belize", "Guyana", "Anguilla", "Aruba", "Barbados", "Bermuda", "Virgin Islands, British", "Curaçao", "Haiti", "Saint Kitts and Nevis", "Trinidad and Tobago", "Turks and Caicos Islands", "Bahamas", "Cayman Islands", "Antigua and Barbuda", "Sint Maarten", "Montserrat")
+
+##filter for SIDS that are in the Atlantic, Indian Ocean, and South China Sea
+ais_sids <- c("Maldives", "Mauritius", "Cabo Verde", "Comoros", "Guinea-Bissau", "Sao Tome and Principe", "Seychelles", "Singapore")
+
+
+data_energy_share <- data_energy_share %>%
+  mutate(sids_geographical_region = case_when(country %in% pacific_sids ~ "Pacific",
+                                              country %in% carribean_sids ~ "Carribean",
+                                              country %in% ais_sids ~ "AIS",
+                                              TRUE ~ "na"))
 ```
 
 Change data type from character to numeric
