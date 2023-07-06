@@ -42,7 +42,7 @@ class(data_energy_share$year)
 class(data_energy_share$percent_renewable_energy_share)
 
 #data type
-data_energy_share$year <- as.factor(data_energy_share$year)
+data_energy_share$year <- as.numeric(data_energy_share$year)
 data_energy_share$percent_renewable_energy_share <- as.numeric(data_energy_share$percent_renewable_energy_share)
 
 #chack class of data
@@ -96,7 +96,7 @@ ais_sids <- c("Maldives", "Mauritius", "Cabo Verde", "Comoros", "Guinea-Bissau",
 #Add column called "sids_geographical_region" and populate rows with name of sids region
 data_energy_share <- data_energy_share %>%
   mutate(sids_geographical_region = case_when(country %in% pacific_sids ~ "Pacific",
-                                              country %in% caribbean_sids ~ "caribbean",
+                                              country %in% caribbean_sids ~ "Caribbean",
                                               country %in% ais_sids ~ "AIS",
                                               TRUE ~ "na"))
 ```
@@ -104,6 +104,8 @@ data_energy_share <- data_energy_share %>%
 Filter for Pacific Region
 ```{r}
 pacific_data <- filter(data_energy_share, sids_geographical_region == "Pacific")
+
+
 
 ```
 
@@ -121,8 +123,8 @@ ggplotly(pacific_line_plot)
 
 Filter for the Atlantic, Indian Ocean, and South China Sea (AIS) Region
 ```{r}
-ais_data <- filter(data_energy_share, sids_geographical_region == "AIS")
-
+ais_data <- data_energy_share %>% 
+  filter(sids_geographical_region == "AIS")
 ```
 
 Create a line chart
@@ -133,13 +135,13 @@ ais_line_plot <- ggplot(data = ais_data, aes(x = year, y = percent_renewable_ene
          x = "Year",
          y = "Renewable Energy Share (%)") +
   theme_classic()
-  
+
 ggplotly(ais_line_plot)
 ```
 
 Filter for the Caribbean
 ```{r}
-caribbean_data <- filter(data_energy_share, sids_geographical_region == "caribbean")
+caribbean_data <- filter(data_energy_share, sids_geographical_region == "Caribbean")
 
 ```
 
